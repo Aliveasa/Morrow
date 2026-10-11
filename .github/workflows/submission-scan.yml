@@ -1,0 +1,158 @@
+name: Submission Scan
+
+# Scans the GitHub repositories a pull request adds to the list with existing
+# open-source scanners and posts the results as a PR comment:
+#   ClamAV (malware), GuardDog (malicious npm/PyPI code),
+#   OSV-Scanner (known vulnerable dependencies), OpenSSF Scorecard (project health).
+# Results are informational; a ClamAV detection fails the check.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    paths: ['README.md', 'README.zh-CN.md']
+  workflow_dispatch:
+    inputs:
+      repos:
+        description: 'Repositories to scan, space-separated (owner/repo)'
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: submission-scan-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR: ${{ github.event.pull_request.number }}
+    steps:
+      # pull_request_target runs with a write token, so the PR's own files are
+      # never checked out or executed: only the diff text is read through the API.
+      # The linked repositories are cloned and scanned statically, never built or run.
+      - name: Find linked repositories
+        id: find
+        env:
+          INPUT_REPOS: ${{ inputs.repos }}
+        run: |
+          if [ -n "$PR" ]; then
+            gh pr diff "$PR" -R "$GITHUB_REPOSITORY" | grep '^+[^+]' \
+              | grep -oE 'https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+' \
+              | sed -E 's#^https://github\.com/##; s#\.git$##' > found.txt || true
+          else
+            printf '%s\n' $INPUT_REPOS > found.txt
+          fi
+          grep -E '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$' found.txt \
+            | grep -vixF "$GITHUB_REPOSITORY" | sort -fu | head -n 5 > targets.txt || true
+          echo "Targets:"; cat targets.txt
+          echo "count=$(wc -l < targets.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Install scanners
+        if: steps.find.outputs.count != '0'
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+          gh release download -R google/osv-scanner -p 'osv-scanner_linux_amd64' -O "$RUNNER_TEMP/bin/osv-scanner"
+          chmod +x "$RUNNER_TEMP/bin/osv-scanner"
+          gh release download -R ossf/scorecard -p 'scorecard_*_linux_amd64.tar.gz' -O - \
+            | tar -xz -C "$RUNNER_TEMP/bin" scorecard
+          pipx install guarddog
+          docker pull -q clamav/clamav:1.5
+
+      - name: Scan
+        if: steps.find.outputs.count != '0'
+        run: |
+          malware=0
+          {
+            echo '<!-- submission-scan -->'
+            echo '## Automated scan'
+            echo
+            echo 'Repositories linked in this PR, checked with ClamAV (malware), GuardDog (malicious npm/PyPI code), OSV-Scanner (known vulnerable dependencies) and OpenSSF Scorecard (project health). The results are informational: the maintainer still reads the code before merging. A ClamAV detection fails this check.'
+          } > report.md
+
+          while read -r repo; do
+            [ -n "$repo" ] || continue
+            dir="$RUNNER_TEMP/src/$repo"
+            echo >> report.md
+            echo "### [$repo](https://github.com/$repo)" >> report.md
+            if ! size=$(gh api "repos/$repo" -q .size 2>/dev/null); then
+              echo '- Not found or not public; skipped.' >> report.md; continue
+            fi
+            if [ "$size" -gt 2000000 ]; then
+              echo '- Larger than 2 GB; file scans skipped.' >> report.md
+            elif ! GIT_LFS_SKIP_SMUDGE=1 timeout 600 git clone -q --depth 1 "https://github.com/$repo.git" "$dir"; then
+              echo '- Clone failed; file scans skipped.' >> report.md
+            else
+              # ClamAV: the image ships with signatures; freshclam refreshes them when it can.
+              rc=0
+              clam=$(timeout 1200 docker run --rm -v "$dir:/scan:ro" --entrypoint sh clamav/clamav:1.5 \
+                -c 'freshclam --quiet >/dev/null 2>&1; clamscan -ri --no-summary /scan' 2>/dev/null) || rc=$?
+              if [ "$rc" -eq 0 ]; then
+                echo '- ✅ **ClamAV**: nothing detected.' >> report.md
+              elif [ "$rc" -eq 1 ]; then
+                malware=1
+                echo "- 🔴 **ClamAV**: $(grep -c ' FOUND$' <<<"$clam") file(s) detected:" >> report.md
+                grep ' FOUND$' <<<"$clam" | head -n 10 | sed 's#^/scan/#  - `#; s#$#`#' >> report.md
+              else
+                echo "- ⚪ **ClamAV**: scan error (exit $rc)." >> report.md
+              fi
+
+              # GuardDog: only for npm / PyPI packages.
+              gd=''
+              [ -f "$dir/package.json" ] && gd="npm"
+              { [ -f "$dir/setup.py" ] || [ -f "$dir/pyproject.toml" ] || [ -f "$dir/setup.cfg" ]; } && gd="$gd pypi"
+              if [ -z "$gd" ]; then
+                echo '- ⚪ **GuardDog**: no npm or PyPI package at the repository root.' >> report.md
+              fi
+              for eco in $gd; do
+                if out=$(timeout 900 guarddog "$eco" scan "$dir" --output-format json 2>/dev/null) \
+                   && n=$(jq -r '.issues // 0' <<<"$out" 2>/dev/null); then
+                  if [ "$n" = 0 ]; then
+                    echo "- ✅ **GuardDog ($eco)**: no issues." >> report.md
+                  else
+                    rules=$(jq -r '[.results | to_entries[] | select(.value != null and .value != [] and .value != {} and .value != "") | .key] | join(", ")' <<<"$out")
+                    echo "- ⚠️ **GuardDog ($eco)**: $n issue(s): $rules." >> report.md
+                  fi
+                else
+                  echo "- ⚪ **GuardDog ($eco)**: scan error." >> report.md
+                fi
+              done
+
+              # OSV-Scanner: exit 0 = clean, 1 = vulnerabilities, 128 = no lockfiles/manifests.
+              rc=0
+              osv=$(timeout 900 osv-scanner scan source -r --format json "$dir" 2>/dev/null) || rc=$?
+              if [ "$rc" -eq 0 ]; then
+                echo '- ✅ **OSV-Scanner**: no known vulnerable dependencies.' >> report.md
+              elif [ "$rc" -eq 1 ]; then
+                read -r v p < <(jq -r '[.results[]?.packages[]?] | "\([.[].vulnerabilities[]?] | length) \(map(select((.vulnerabilities // []) | length > 0)) | length)"' <<<"$osv") || true
+                echo "- ⚠️ **OSV-Scanner**: $v known vulnerabilities in $p dependencies." >> report.md
+              elif [ "$rc" -eq 128 ]; then
+                echo '- ⚪ **OSV-Scanner**: no dependency manifests found.' >> report.md
+              else
+                echo "- ⚪ **OSV-Scanner**: scan error (exit $rc)." >> report.md
+              fi
+            fi
+
+            # Scorecard reads the repository through the GitHub API; no clone needed.
+            score=$(GITHUB_AUTH_TOKEN="$GH_TOKEN" timeout 600 scorecard --repo="github.com/$repo" \
+              --format=json 2>/dev/null | jq -r '.score // empty' 2>/dev/null) || true
+            if [ -n "$score" ]; then
+              echo "- **OpenSSF Scorecard**: $score / 10 ([details](https://scorecard.dev/viewer/?uri=github.com/$repo))." >> report.md
+            else
+              echo '- ⚪ **OpenSSF Scorecard**: not available.' >> report.md
+            fi
+          done < targets.txt
+
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$PR" ]; then
+            gh pr comment "$PR" -R "$GITHUB_REPOSITORY" --body-file report.md --edit-last --create-if-none
+          fi
+          if [ "$malware" -eq 1 ]; then
+            echo '::error::ClamAV detected malware in a linked repository.'
+            exit 1
+          fi
