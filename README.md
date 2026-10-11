@@ -17,6 +17,7 @@
 [English](#contents) · [中文版](README.zh-CN.md)
 
 We read the code of every project here, and each description says what it actually does.
+New entries are also scanned automatically for malware, malicious-code patterns, and known vulnerable dependencies.
 Anything unfinished or unclear is tagged `verify` or `adapt`.
 
 **Status:** `ready` = usable as an app or service · `adapt` = needs setup or customization · `infra` = building block · `verify` = unfinished or unclear; check the code yourself before relying on it
