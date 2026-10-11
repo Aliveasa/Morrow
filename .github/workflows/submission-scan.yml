@@ -148,6 +148,7 @@ jobs:
             fi
           done < targets.txt
 
+          cat report.md
           cat report.md >> "$GITHUB_STEP_SUMMARY"
           if [ -n "$PR" ]; then
             gh pr comment "$PR" -R "$GITHUB_REPOSITORY" --body-file report.md --edit-last --create-if-none
