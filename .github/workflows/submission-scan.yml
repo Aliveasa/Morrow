@@ -72,7 +72,7 @@ jobs:
             echo '<!-- submission-scan -->'
             echo '## Automated scan'
             echo
-            echo 'Repositories linked in this PR, checked with ClamAV (malware), GuardDog (malicious npm/PyPI code), OSV-Scanner (known vulnerable dependencies) and OpenSSF Scorecard (project health). The results are informational: the maintainer still reads the code before merging. A ClamAV detection fails this check.'
+            echo 'Repositories linked in this PR, checked with ClamAV (malware), GuardDog (malicious-code patterns), OSV-Scanner (known vulnerable dependencies) and OpenSSF Scorecard (project health). The results are informational: the maintainer still reads the code before merging. A ClamAV detection fails this check.'
           } > report.md
 
           while read -r repo; do
@@ -102,26 +102,24 @@ jobs:
                 echo "- ⚪ **ClamAV**: scan error (exit $rc)." >> report.md
               fi
 
-              # GuardDog: only for npm / PyPI packages.
-              gd=''
-              [ -f "$dir/package.json" ] && gd="npm"
-              { [ -f "$dir/setup.py" ] || [ -f "$dir/pyproject.toml" ] || [ -f "$dir/setup.cfg" ]; } && gd="$gd pypi"
-              if [ -z "$gd" ]; then
-                echo '- ⚪ **GuardDog**: no npm or PyPI package at the repository root.' >> report.md
+              # GuardDog: one pass per repository (npm and PyPI mode read the same files).
+              # Only threat-* rules are reported; capability-* rules match ordinary app code.
+              eco=''
+              if [ -f "$dir/package.json" ]; then eco=npm
+              elif [ -f "$dir/setup.py" ] || [ -f "$dir/pyproject.toml" ] || [ -f "$dir/setup.cfg" ]; then eco=pypi
               fi
-              for eco in $gd; do
-                if out=$(timeout 900 guarddog "$eco" scan "$dir" --output-format json 2>/dev/null) \
-                   && n=$(jq -r '.issues // 0' <<<"$out" 2>/dev/null); then
-                  if [ "$n" = 0 ]; then
-                    echo "- ✅ **GuardDog ($eco)**: no issues." >> report.md
-                  else
-                    rules=$(jq -r '[.results | to_entries[] | select(.value != null and .value != [] and .value != {} and .value != "") | .key] | join(", ")' <<<"$out")
-                    echo "- ⚠️ **GuardDog ($eco)**: $n issue(s): $rules." >> report.md
-                  fi
+              if [ -z "$eco" ]; then
+                echo '- ⚪ **GuardDog**: no npm or PyPI package at the repository root.' >> report.md
+              elif out=$(timeout 900 guarddog "$eco" scan "$dir" --output-format json 2>/dev/null) \
+                   && rules=$(jq -r '[.results | to_entries[] | select(.key | startswith("threat-")) | select(.value != null and .value != [] and .value != {} and .value != "") | .key] | join(", ")' <<<"$out" 2>/dev/null); then
+                if [ -z "$rules" ]; then
+                  echo '- ✅ **GuardDog**: no malicious-code patterns.' >> report.md
                 else
-                  echo "- ⚪ **GuardDog ($eco)**: scan error." >> report.md
+                  echo "- ℹ️ **GuardDog**: heuristic patterns to look at (often legitimate in apps that use the network or subprocesses): $rules." >> report.md
                 fi
-              done
+              else
+                echo '- ⚪ **GuardDog**: scan error.' >> report.md
+              fi
 
               # OSV-Scanner: exit 0 = clean, 1 = vulnerabilities, 128 = no lockfiles/manifests.
               rc=0
