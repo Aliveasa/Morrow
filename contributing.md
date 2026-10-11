@@ -10,6 +10,7 @@ Contributions that improve the accuracy, usefulness, and curation quality of thi
 - It is maintained, documented, functional, and distinct from existing entries.
 - **The free version must be fully usable.** Charging for convenience is fine, such as paid hosting or giving paying users new releases a version or two earlier. Projects whose free version is deliberately limited (for example, history capped at 24 hours, or core features locked behind a subscription) are not listed. Core features here means what an individual uses with their companion; charging for enterprise-only features is fine.
 - **No ads in the software.** Sponsor or donation links in the README are fine.
+- **Projects that issue or promote their own crypto token are not listed.** This covers token trading links in the README or software, token launchpads, and projects that run on a token. Agent wallets and payment features are reviewed case by case: they can be listed when they are one feature of the project and unrelated to promoting a token.
 - Costs outside the project itself, such as model APIs, servers, and hardware, do not count as charging.
 - Projects that later add paywalls to core features or add ads will be removed from the list.
 - Projects that are unfinished, experimental, or unclear are tagged `verify` or `adapt`. `ready` is reserved for projects that work once installed.
