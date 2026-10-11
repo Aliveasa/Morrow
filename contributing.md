@@ -7,6 +7,7 @@ Contributions that improve the accuracy, usefulness, and curation quality of thi
 - The project is open-source, public-source, or openly reusable companion infrastructure.
 - It is useful for long-term companion setups rather than only one-shot chatbot interactions.
 - **Read the code of every project.** Descriptions state what the code actually implements; core logic, data flow, and how far it really runs must be confirmed in the codebase.
+- **New projects are scanned automatically.** When a pull request adds a project, CI runs [ClamAV](https://github.com/Cisco-Talos/clamav) (malware), [GuardDog](https://github.com/DataDog/guarddog) (malicious-code patterns), [OSV-Scanner](https://github.com/google/osv-scanner) (known vulnerable dependencies) and [OpenSSF Scorecard](https://github.com/ossf/scorecard) (project health) on the linked repository and posts the results on the pull request. Malware means rejection; other findings are checked during code review.
 - It is maintained, documented, functional, and distinct from existing entries.
 - **The free version must be fully usable.** Charging for convenience is fine, such as paid hosting or giving paying users new releases a version or two earlier. Projects whose free version is deliberately limited (for example, history capped at 24 hours, or core features locked behind a subscription) are not listed. Core features here means what an individual uses with their companion; charging for enterprise-only features is fine.
 - **No ads in the software.** Sponsor or donation links in the README are fine.
