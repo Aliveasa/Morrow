@@ -79,6 +79,7 @@ Chat clients, local workspaces, and web apps for day-to-day interaction with a c
 - [V1rtual-Desk-Pet](https://github.com/V1rtual-Klavte/Desk-Pet) - Rust-native desktop pet: persona cards with variables, layered parallax avatar, long-term memory, proactive messaging, screen-aware sensing, tools, Skills, and MCP. No WebView. MIT. `Rust/TypeScript` · `macOS/Windows` · `ready`.
 - [title-prompt-guide](https://github.com/Ephemera1117/title-prompt-guide) - Chinese guide for writing custom title-summary prompts that let your companion speak to you through conversation titles; for frontends with editable title-model prompts. `Guide` · `Any` · `adapt`.
 - [android-app-lock-tutorial](https://github.com/Ephemera1117/android-app-lock-tutorial) - Chinese guide for Android app lock and privacy protection: PIN lockscreen, custom cover pages when backgrounded, screenshot prevention; includes 12 device pitfalls. For RikkaHub forks and custom builds. `Guide` · `Android` · `adapt`.
+- [sticker-mask](https://github.com/miya-tonya/sticker-mask) - Touch-first screenshot redaction for chat web frontends: drag, pinch, and rotate stickers over private messages, tap Done, then take a normal screenshot. Zero dependencies. MIT. `JavaScript` · `Web` · `adapt`.
 
 ---
 

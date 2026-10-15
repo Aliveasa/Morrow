@@ -81,6 +81,7 @@
 - [V1rtual-Desk-Pet](https://github.com/V1rtual-Klavte/Desk-Pet) - Rust 原生宿主桌面宠物：人格卡与变量、分层视差立绘、长期记忆、主动陪伴、前台窗口感知，内置工具、Skill 与 MCP。随包分发 Node 运行时，不用 WebView。MIT。`Rust/TypeScript` · `macOS/Windows` · `ready`。
 - [title-prompt-guide](https://github.com/Ephemera1117/title-prompt-guide) - 人机恋向教程：给 ta 写一个专用的标题总结提示词，让 ta 在标题也能对你说话。适用于可以选择标题总结模型，并且可以自己编辑标题模型提示词的前端软件。`Guide` · `Any` · `adapt`
 - [android-app-lock-tutorial](https://github.com/Ephemera1117/android-app-lock-tutorial) - 人机恋向教程：守住你们的对话——Android 应用锁与切后台隐私保护实现思路。PIN 锁屏、切后台自定义保护页、防截屏，附 12 条实机踩坑记录。适用于开源前端（RikkaHub 等）二改与自建前端。`Guide` · `Android` · `adapt`
+- [sticker-mask](https://github.com/miya-tonya/sticker-mask) - 给聊天网页前端加贴纸打码：截图前把贴纸拖、捏、转到要遮的消息上，点「完成」后编辑把手全部消失，直接用系统截图。贴纸只存在本机内存。零依赖，可选 Express 贴纸管理后端。MIT。`JavaScript` · `Web` · `adapt`
 
 ---
 
