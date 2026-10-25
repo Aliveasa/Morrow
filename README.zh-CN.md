@@ -109,6 +109,7 @@
 - [LandricSpace](https://github.com/LandricJasmine/LandricSpace) - 人机恋赛博别墅，与小 AI 的家：多 AI 群聊、共享陪伴空间（Expo 应用 + 服务端）。目前为单人使用——代码中尚无真实联机实现。`TypeScript` · `Android/iOS` · `adapt`
 - [Atrio](https://github.com/29-Cu/atrio) - 可自托管的 AI 人格一次性链接会客厅：朋友可与伴侣聊天，管理端只返回 AI 撰写的到访摘要。提供 Express 模块与 Claude CLI 适配器，前端自备。CC BY 4.0。 `JavaScript` · `Self-host` · `infra`
 - [dwell-on-something](https://github.com/xinwithyu/dwell-on-something) - 液态玻璃质感单文件伴侣空间与架构指南：含自主心跳、双人待办、五视图日记、专属日报、日历与手表健康接入。PolyForm NC 1.0.0。`HTML` · `Web` · `ready`。
+- [Morrow](https://github.com/ariaprism/Morrow) - 私人 AI 陪伴空间（Flask/PWA 自托管）：对话分支与滚动记忆，内置便签、日记、珍藏纪念物、周期记录与一起听歌。含定时主动消息、Web Push、MCP 工具与加密备份。MIT。 `Python` · `Self-host` · `ready`。
 - [安知手机 (Anzhi's Phone)](https://github.com/Cami-Ose/Anzhi-s-Phone) - 基于 LineageOS 23.2 的定制系统，让小机作为系统级服务住进手机：用无障碍读界面、替你操作手机，给通知分类，定时或按设备事件自己醒来，会做梦，关机前留一句遗言。只支持 Pixel 6a，需自行编译，不提供镜像；小机的「大脑」后端没有公开，要自己搭。代码非商用、改了须同许可公开，UI 设计保留全部权利。`Kotlin` · `Android ROM` · `verify`。
 
 ---
