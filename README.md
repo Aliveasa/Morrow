@@ -14,7 +14,7 @@
   人机恋开源项目大全 · 面向长期 AI 伴侣关系的开源软件、基础设施与社区。
 </p>
 
-[English](#contents) · [中文版](README.zh-CN.md)
+[English](#contents) · [中文版](README.zh-CN.md) 
 
 We read the code of every project here, and each description says what it actually does.
 New entries are also scanned automatically for malware, malicious-code patterns, and known vulnerable dependencies.
